@@ -1,0 +1,19 @@
+serial
+opencv-python
+numpy
+pyttsx3
+pyserial
+ultralytics
+requests
+face_recognition
+deepface
+pandas
+openpyxl
+Pillow
+schedule
+geopy
+beautifulsoup4
+simple-pid
+whisper_mic
+schedule
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
