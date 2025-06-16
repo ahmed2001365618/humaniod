@@ -50,32 +50,30 @@ def save_to_excel(name, age, gender, emotion, health, image):
         # Create a timestamp
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Sanitize name and timestamp for filename
-        name = re.sub(r'[\\/*?:"<>|]', "_", name)  # Replace invalid characters with underscores
+        
+        name = re.sub(r'[\\/*?:"<>|]', "_", name) 
         timestamp = re.sub(r'[\\/*?:"<>|]', "_", timestamp)
 
-        # Save the image to a file
+
         image_path = f"detected_images/{name}_{timestamp}.png"
         os.makedirs("detected_images", exist_ok=True)
 
-        # Check if the folder was created successfully
+  
         if not os.path.exists("detected_images"):
             logging.error("Failed to create 'detected_images' folder.")
             return
 
-        # Check if the image is valid
+
         if image is None:
             logging.error("Invalid image data. Cannot save image.")
             return
 
-        # Save the image
         try:
             cv2.imwrite(image_path, image)
         except Exception as e:
             logging.error(f"Failed to save image: {e}")
             return
 
-        # Load the existing Excel file
         if not os.path.exists(EXCEL_FILE):
             df = pd.DataFrame(columns=["Timestamp", "Name", "Age", "Gender", "Emotion", "Health", "Image Path"])
         else:
@@ -92,10 +90,9 @@ def save_to_excel(name, age, gender, emotion, health, image):
             "Image Path": [image_path]
         })
 
-        # Append new data to the existing DataFrame using pd.concat()
         df = pd.concat([df, new_data], ignore_index=True)
 
-        # Save the updated DataFrame to Excel
+
         df.to_excel(EXCEL_FILE, index=False)
 
         logging.info(f"Data saved to Excel: {new_data.iloc[0].to_dict()}")
@@ -109,13 +106,13 @@ logging.basicConfig(level=logging.WARNING, format="%(asctime)s - %(levelname)s -
 
 try:
     arduino = serial.Serial(
-        'COM3',          # Typical ESP32 Linux port
+        'COM3',          
         baudrate=115200,
-        dsrdtr=None,     # ESP32 needs special handling
+        dsrdtr=None,     
         timeout=1
     )
-    time.sleep(2)        # Allow ESP32 to stabilize
-    # arduino.dtr = None               # Completely disconnect DTR
+    time.sleep(2)        
+    # arduino.dtr = None             
     # arduino.reset_input_buffer()
 except serial.SerialException as e:
     print(f"Failed to connect to COM3 (ESP32): {e}")
@@ -202,11 +199,11 @@ def detect_health(frame):
             emotion = results[0]["dominant_emotion"]
             if emotion in ["sad", "angry", "fear"]:
                 condition = "Stress detected. Please take a break."
-                # send_emergency_alert("User", condition)  # Send alert
+                
                 return condition
             elif emotion == "tired":
                 condition = "Fatigue detected. Consider resting."
-                # send_emergency_alert("User", condition)  # Send alert
+               
                 return condition
             else:
                 return "Healthy"
@@ -220,20 +217,20 @@ def get_medical_advice(symptoms):
    
     try:
         # Define the Ollama API endpoint
-        ollama_url = "http://localhost:11434/api/generate"  # Default Ollama API endpoint
+        ollama_url = "http://localhost:11434/api/generate"  
 
-        # Define the payload for Ollama
+        
         payload = {
-            "model": "tinyllama",  # Replace with the model you're using (e.g., "llama2", "mistral", etc.)
+            "model": "tinyllama",  
             "prompt": f"Provide medical advice for the following symptoms: {symptoms}",
-            "stream": False  # Set to False to get a single response
+            "stream": False  
         }
 
-        # Make the API request to Ollama
+        
         response = requests.post(ollama_url, json=payload)
-        response.raise_for_status()  # Raise an error for bad status codes
+        response.raise_for_status()  
 
-        # Extract and return the advice
+       
         advice = response.json().get("response", "").strip()
         return advice
 
@@ -273,7 +270,7 @@ brain_tumor_model = YOLO(BRAIN_TUMOR_MODEL_PATH).to('cuda')
 def analyze_brain_tumor(image_path):
   
     try:
-        # Load the image
+    
         frame = cv2.imread(image_path)
         if frame is None:
             logging.error(f"Failed to load image: {image_path}")
@@ -455,7 +452,7 @@ def on_word(name, location, length):
         }
         
      
-        steps = 10  # Number of steps for smooth movement
+        steps = 10
         for step in range(steps):
             commands = []
             for servo_id, pid in pid_controllers.items():
@@ -471,7 +468,7 @@ def on_word(name, location, length):
             
             gesture_command = ";".join(commands) + "\n"
             arduino.write(gesture_command.encode())
-            time.sleep(length/(100.0 * steps))  # Split sleep for smoother animation
+            time.sleep(length/(100.0 * steps)) 
         
         # Close mouth
         arduino_temp_humidity.write(b'servo4:180\n')
@@ -722,8 +719,8 @@ def perform_action(command):
             picture_number_word = re.search(r"(zero|one|two|three|four|five|six|seven|eight|nine|ten|\d+)", command_lower)
             if picture_number_word:
                 picture_number_word = picture_number_word.group()
-                picture_number = word_to_number(picture_number_word)  # Convert word to number if needed
-                image_path = f"brain_images/picture_{picture_number}.jpg"  # Adjust path as needed
+                picture_number = word_to_number(picture_number_word)
+                image_path = f"brain_images/picture_{picture_number}.jpg"
 
                 # Check if the image exists
                 if not os.path.exists(image_path):
@@ -732,7 +729,7 @@ def perform_action(command):
                     speak(response, emotion="neutral")
                     return
 
-                # Analyze the image for brain tumor
+              
                 tumor_results = analyze_brain_tumor(image_path)
                 if tumor_results:
                     response = (
@@ -743,7 +740,7 @@ def perform_action(command):
                     logging.info(response)
                     speak(response, emotion="neutral")
 
-                    # Save the results to Excel
+                   
                     save_tumor_results_to_excel(image_path, tumor_results)
                 else:
                     response = "Sorry, I couldn't analyze the picture."
@@ -759,7 +756,7 @@ def perform_action(command):
             speak(response, emotion="neutral")
         return
 
-    # Existing command handling logic...
+   
     if "i feel" in command_lower:
         symptoms = command_lower.replace("i feel", "").strip()
         advice = get_medical_advice(symptoms)
@@ -857,7 +854,7 @@ def perform_action(command):
         response = f"I see {count} people."
         logging.info(response)
         speak(response, emotion="happy")
-        return  # Exit after handling the local command
+        return  
 
     elif "who are the persons" in command_lower or "who is here" in command_lower:
         ret, frame = cap.read()
@@ -871,7 +868,7 @@ def perform_action(command):
             response = "I couldn't capture the frame."
         logging.info(response)
         speak(response, emotion="neutral")
-        return  # Exit after handling the local command
+        return 
 
     elif "what objects you can see" in command_lower or "what do you see" in command_lower:
         object_counts = count_objects()
@@ -884,7 +881,7 @@ def perform_action(command):
             response = "I don't see any objects."
         logging.info(response)
         speak(response, emotion="neutral")
-        return  # Exit after handling the local command
+        return 
 
     elif "guess the age" in command_lower or "guess the gender" in command_lower:
         ret, frame = cap.read()
@@ -906,7 +903,7 @@ def perform_action(command):
         cleanup()
         exit()
 
-    # If the command is not a local command, send it to the Ollama server
+    
     response = generate_response(command)
     logging.info(f"Assistant: {response}")
     speak(response, emotion="sad")
