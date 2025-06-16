@@ -122,6 +122,9 @@ except serial.SerialException as e:
     arduino = None
 
 
+
+
+
 try:
     arduino_temp_humidity = serial.Serial(
         'COM7', 
@@ -131,7 +134,7 @@ try:
     )
 except serial.SerialException as e:
     print(f"Failed to connect to COM7 (temp/humidity): {e}")
-    arduino_temp_humidity = None # Replace 'COM4' with the correct port for the second Arduino
+    arduino_temp_humidity = None 
 
 
 
@@ -245,17 +248,16 @@ def detect_age_gender_mood_health(frame, name=None):
     Detect age, gender, mood, and health from a frame and store the data in the database and Excel sheet.
     """
     try:
-        # Analyze the face using DeepFace
+        
         results = DeepFace.analyze(frame, actions=["age", "gender", "emotion"], enforce_detection=False)
         if results:
-            result = results[0]  # Take the first face detected
+            result = results[0]  
             age = result.get("age", "unknown")
             gender = result.get("gender", "unknown")
             emotion = result.get("dominant_emotion", "unknown")
-            health = "healthy"  # Placeholder for health detection
+            health = "healthy" 
 
-            # Save data to database and Excel
-            # save_to_database(name, age, gender, emotion, health, frame)
+           
             save_to_excel(name, age, gender, emotion, health, frame)
 
             return age, gender, emotion, health
@@ -269,13 +271,7 @@ brain_tumor_model = YOLO(BRAIN_TUMOR_MODEL_PATH).to('cuda')
 
 
 def analyze_brain_tumor(image_path):
-    """
-    Analyze a brain MRI image for tumor detection using a custom YOLO model.
-    Args:
-        image_path (str): Path to the local image file.
-    Returns:
-        dict: A dictionary containing the detection status and confidence score.
-    """
+  
     try:
         # Load the image
         frame = cv2.imread(image_path)
@@ -283,18 +279,18 @@ def analyze_brain_tumor(image_path):
             logging.error(f"Failed to load image: {image_path}")
             return None
 
-        # Resize the image (optional, depending on your model's input size)
+        
         frame = cv2.resize(frame, (frame_wid, frame_hyt))
 
-        # Perform inference using the custom YOLO model
+        
         results = brain_tumor_model.predict(frame, conf=0.45, save=False)
 
-        # Process the results
+       
         if results:
             for box in results[0].boxes:
-                conf = round(float(box.conf.cpu().numpy()[0]) * 100, 2)  # Confidence score
+                conf = round(float(box.conf.cpu().numpy()[0]) * 100, 2)
 
-                # Return the results
+                
                 return {
                     "status": "Tumor Detected",
                     "confidence": conf
@@ -317,7 +313,7 @@ def save_tumor_results_to_excel(image_path, tumor_results):
         tumor_results (dict): Results from the tumor detection function.
     """
     try:
-        # Load the existing Excel file or create a new one
+      
         if os.path.exists(EXCEL_FILE):
             workbook = pd.ExcelFile(EXCEL_FILE)
             sheets = workbook.sheet_names
@@ -325,17 +321,17 @@ def save_tumor_results_to_excel(image_path, tumor_results):
         else:
             df = pd.DataFrame(columns=["Image Path", "Status", "Confidence"])
 
-        # Create a new DataFrame for the tumor results
+        
         new_data = pd.DataFrame({
             "Image Path": [image_path],
             "Status": [tumor_results["status"]],
             "Confidence": [tumor_results["confidence"]]
         })
 
-        # Append the new data to the existing DataFrame
+       
         df = pd.concat([df, new_data], ignore_index=True)
 
-        # Save the updated DataFrame to a new sheet in the Excel file
+        
         with pd.ExcelWriter(EXCEL_FILE, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
             df.to_excel(writer, sheet_name="Brain Tumor Results", index=False)
 
@@ -346,9 +342,7 @@ def save_tumor_results_to_excel(image_path, tumor_results):
 
 
 def read_temperature_humidity():
-    """
-    Read temperature and humidity data from the second Arduino.
-    """
+
     if arduino_temp_humidity is None:
         logging.error("Temperature/humidity Arduino is not connected.")
         return None, None
@@ -366,9 +360,7 @@ def read_temperature_humidity():
     return None, None
 
 def monitor_temperature_humidity():
-    """
-    Monitor temperature and humidity, and send an email if temperature exceeds 50°C.
-    """
+   
     while not stop_event.is_set():
         temperature, humidity = read_temperature_humidity()
         if temperature is not None and humidity is not None:
@@ -451,7 +443,7 @@ def on_word(name, location, length):
         # Open mouth (servo4) - no PID
         arduino_temp_humidity.write(b'servo4:130\n')
         
-        # Generate target positions for all servos except 4
+        
         target_positions = {
             # 0: random.randint(100, 160),
             # 1: random.randint(100, 160),
@@ -462,21 +454,21 @@ def on_word(name, location, length):
             7: random.randint(60, 150)
         }
         
-        # Smooth movement using PID control
+     
         steps = 10  # Number of steps for smooth movement
         for step in range(steps):
             commands = []
             for servo_id, pid in pid_controllers.items():
-                # Update PID setpoint
+          
                 pid.setpoint = target_positions[servo_id]
                 
-                # Calculate new position
+                
                 new_pos = pid(current_positions[servo_id])
                 current_positions[servo_id] = new_pos
                 
                 commands.append(f"servo{servo_id}:{int(new_pos)}")
             
-            # Send commands to Arduino
+            
             gesture_command = ";".join(commands) + "\n"
             arduino.write(gesture_command.encode())
             time.sleep(length/(100.0 * steps))  # Split sleep for smoother animation
@@ -521,14 +513,13 @@ def speak(text, emotion="neutral"):
 
 
 def listen_for_command():
-    """Capture voice commands using Whisper microphone input."""
+    
     try:
         logging.info("Listening for voice commands via microphone...")
         
-        # Initialize WhisperMic
         mic = WhisperMic()
         
-        # Listen for voice command
+      
         result = mic.listen().strip()
         
         if result:
@@ -573,14 +564,7 @@ def count_objects():
 
 
 def send_servo_command(servo_id, angle, speed):
-    """
-    Sends a servo command to the Arduino.
-    
-    Parameters:
-        servo_id (int): The ID of the servo (0-7).
-        angle (int): The target angle for the servo (0-180).
-        speed (int): The speed of the movement (delay in milliseconds).
-    """
+
     if servo_id < 0 or servo_id > 7:
         print(f"Invalid servo ID: {servo_id}. Must be between 0 and 7.")
         return
@@ -591,10 +575,10 @@ def send_servo_command(servo_id, angle, speed):
         print(f"Invalid speed: {speed}. Must be a positive value.")
         return
 
-    # Format the command as "servoX:angle:speed"
+   
     command = f"servo{servo_id}:{angle}:{speed}\n"
-    arduino.write(command.encode())  # Send the command to Arduino
-    print(f"Sent to Arduino: {command.strip()}")  # Print the command for debugging
+    arduino.write(command.encode())  
+    print(f"Sent to Arduino: {command.strip()}")
 
 def both_hi():
     send_servo_command(0, 50, 15)
@@ -676,9 +660,7 @@ def right_hi():
 
 
 def recognize_faces(frame):
-    """
-    Recognize faces in the frame and return their names.
-    """
+   
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     face_locations = face_recognition.face_locations(rgb_frame)
     face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
@@ -701,14 +683,11 @@ def recognize_faces(frame):
 
 
 
+
+
+
 def word_to_number(word):
-    """
-    Convert a word-based number (e.g., "one") to its numeric equivalent (e.g., "1").
-    Args:
-        word (str): The word-based number (e.g., "one").
-    Returns:
-        str: The numeric equivalent (e.g., "1").
-    """
+   
     word_to_num = {
         "zero": "0",
         "one": "1",
@@ -722,10 +701,7 @@ def word_to_number(word):
         "nine": "9",
         "ten": "10"
     }
-    return word_to_num.get(word.lower(), word)  # Return the numeric equivalent if found, else return the original word
-
-
-
+    return word_to_num.get(word.lower(), word)  
 
 
 
